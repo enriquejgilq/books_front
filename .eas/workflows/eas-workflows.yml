@@ -3,7 +3,7 @@ on:
   pull_request:
     branches:
       - development
-       
+
 jobs:
   build-android-apk:
     type: build
@@ -11,8 +11,7 @@ jobs:
     project_type: expo
     params:
       profile: preview
+      platform: android # Se agrega la definición de la plataforma aquí
       build_artifacts:
         android:
           type: apk
-
-
