@@ -5,10 +5,14 @@ on:
       - development
        
 jobs:
-  android_development_build:
-    name: Build Android
+  build-android-apk:
     type: build
+    platform: android
+    project_type: expo
     params:
-      platform: android
-      profile: development
+      profile: preview
+      build_artifacts:
+        android:
+          type: apk
+
 
