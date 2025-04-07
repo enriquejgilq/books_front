@@ -11,7 +11,7 @@ jobs:
     project_type: expo
     params:
       profile: preview
-      platform: android # Se agrega la definición de la plataforma aquí
+      platform: android  
       build_artifacts:
         android:
           type: apk
