@@ -39,6 +39,7 @@
     "experiments": {
       "typedRoutes": true
     },
+    "owner": "enriquegilq",
     "extra": {
       "router": {
         "origin": false
