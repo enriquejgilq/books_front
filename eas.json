@@ -24,8 +24,5 @@
 	},
 	"submit": {
 		"production": {}
-	},
-	"hooks": {
-        "post-build": "node notify-discord.js"
-      }
+	}
 }
