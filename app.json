@@ -1,7 +1,7 @@
 {
   "expo": {
     "name": "books-store",
-    "slug": "books-store",
+    "slug": "books",
     "version": "1.0.0",
     "orientation": "portrait",
     "icon": "./assets/images/icon.png",
@@ -39,12 +39,13 @@
     "experiments": {
       "typedRoutes": true
     },
+    "owner": "enriquegilq",
     "extra": {
       "router": {
         "origin": false
       },
       "eas": {
-        "projectId": "b06b5724-4bdc-4e56-b38e-30cb49b9d808"
+        "projectId": "02060d7d-13ed-4345-ae32-3b20088f7b2e"
       }
     }
   }

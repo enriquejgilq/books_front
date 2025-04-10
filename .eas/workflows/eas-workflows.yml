@@ -11,7 +11,15 @@ jobs:
     project_type: expo
     params:
       profile: preview
-      platform: android # Se agrega la definición de la plataforma aquí
+      platform: android  
       build_artifacts:
         android:
           type: apk
+      steps:
+      - name: Send Discord notification
+        run: |
+          curl -X POST "$DISCORD_WEBHOOK_URL" \
+          -H "Content-Type: application/json" \
+          -d '{
+            "content": "🚀 Se ha generado un nuevo build de *preview* para Android en el branch `development`. ¡Ya pueden iniciar pruebas! 🧪"
+          }'
