@@ -3,7 +3,7 @@ name: Send Discord message on push to test2
 on:
   push:
     branches:
-      - test2
+      - test-2
 
 jobs:
   notify-discord:
