@@ -1,0 +1,20 @@
+name: Notify Discord on successful build
+
+on:
+  check_suite:
+    types: [completed]
+
+jobs:
+  notify-discord:
+    if: github.event.check_suite.conclusion == 'success'
+    runs-on: ubuntu-latest
+    steps:
+      - name: Post build success to Discord
+        env:
+          DISCORD_WEBHOOK_URL: ${{ secrets.DISCORD_WEBHOOK_URL }}
+        run: |
+          curl -X POST -H "Content-Type: application/json" \
+          -d '{
+                "content": "✅ ¡Todos los checks del PR pasaron!\n🔗 Puedes descargar el APK desde la pestaña de [Expo Builds](https://expo.dev/accounts/enriquegilq/projects/books/builds)"
+              }' \
+          $DISCORD_WEBHOOK_URL
