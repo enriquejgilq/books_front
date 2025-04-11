@@ -8,7 +8,7 @@ export default function HomeScreen() {
 
   return (
     <View>
-      <Text>Bienvenido a Home</Text>
+      <Text>Bienvenido a Home1</Text>
       <Button title="Cerrar sesión" onPress={signOut} />
     </View>
   );
