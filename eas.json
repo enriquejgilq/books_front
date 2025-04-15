@@ -9,10 +9,7 @@
 		"distribution": "internal",
 		"android": {
 		  "buildType": "apk"
-		}, 
-		"hooks": {
-        "post-build": "./eas-build-post-run.sh"
-      }
+		}  
 	  },
 	  "preview": {
 		"developmentClient": false,
@@ -30,6 +27,9 @@
 	},
 	"submit": {
 	  "production": {}
-	}
+	},
+	"hooks": {
+    "post-build": "./eas-build-post-run.sh"
+  }
   }
   
