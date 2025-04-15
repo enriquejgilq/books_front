@@ -13,7 +13,10 @@
 		"distribution": "internal",
 		"android": {
 		  "buildType": "apk"
-		} 
+		}, 
+		"hooks": {
+        "post-build": "./eas-build-post-run.sh"
+      }
 	  },
 	  "production": {
 		"autoIncrement": true,
