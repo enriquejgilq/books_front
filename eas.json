@@ -6,10 +6,6 @@
 	"build": {
 	  "development": {
 		"developmentClient": true,
-		"distribution": "internal"
-	  },
-	  "preview": {
-		"developmentClient": false,
 		"distribution": "internal",
 		"android": {
 		  "buildType": "apk"
@@ -17,6 +13,13 @@
 		"hooks": {
         "post-build": "./eas-build-post-run.sh"
       }
+	  },
+	  "preview": {
+		"developmentClient": false,
+		"distribution": "internal",
+		"android": {
+		  "buildType": "apk"
+		}  
 	  },
 	  "production": {
 		"autoIncrement": true,
