@@ -10,31 +10,36 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-      - name: Checkout code
+      - name: Checkout repo
         uses: actions/checkout@v3
 
       - name: Set up Node.js
-        uses: actions/setup-node@v2
+        uses: actions/setup-node@v3
         with:
-          node-version: '16'
+          node-version: '18'
 
       - name: Install EAS CLI
         run: npm install -g eas-cli
 
-      - name: Get latest build artifact URL
+      - name: Get latest APK URL from EAS
+        id: get_apk_url
         env:
-          EAS_ACCESS_TOKEN: ${{ vars.EAS_ACCESS_TOKEN_VAR }}
-        id: get_build
+          EAS_ACCESS_TOKEN: ${{ vars.EAS_ACCESS_TOKEN }}
         run: |
+          echo "🔑 Usando token de EAS..."
+          eas whoami || echo "No autenticado, pero seguimos..."
+
           BUILD_INFO=$(eas build:list --limit 1 --platform android --json --non-interactive)
+          echo "🔍 Build Info: $BUILD_INFO"
           APK_URL=$(echo "$BUILD_INFO" | jq -r '.[0].artifacts.buildUrl')
+          echo "📦 APK URL: $APK_URL"
           echo "apk_url=$APK_URL" >> $GITHUB_OUTPUT
 
-      - name: Send APK link to Discord
+      - name: Notify Discord with APK URL
         run: |
           DISCORD_WEBHOOK_URL="https://discord.com/api/webhooks/1359492861376073849/UG5D1MUvgsO2cPYacgJX9md7S19nGOQ0W0cOov9IN7pcfyXW1KxJXjewK_EjWZm4FmBA"
-          APK_LINK="${{ steps.get_build.outputs.apk_url }}"
-          MESSAGE="🚀 ¡Nuevo build generado exitosamente!\n📦 Descárgalo aquí: $APK_LINK"
+          APK_URL="${{ steps.get_apk_url.outputs.apk_url }}"
+          MESSAGE="🚀 Nuevo APK disponible para pruebas: $APK_URL"
           curl -X POST "$DISCORD_WEBHOOK_URL" \
             -H "Content-Type: application/json" \
             -d "{\"content\": \"$MESSAGE\"}"
