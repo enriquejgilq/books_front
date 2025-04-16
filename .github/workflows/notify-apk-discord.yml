@@ -1,20 +1,17 @@
-name: Notify Discord on successful build
+name: Notify Discord on Merge to Develop
 
 on:
-  check_suite:
-    types: [completed]
+  push:
+    branches:
+      - test-2  # Se ejecuta solo cuando haya un push a la rama 'test-2'
 
 jobs:
-  notify-discord:
-    if: github.event.check_suite.conclusion == 'success'
+  notify:
     runs-on: ubuntu-latest
+
     steps:
-      - name: Post build success to Discord
-        env:
-          DISCORD_WEBHOOK_URL: ${{ secrets.DISCORD_WEBHOOK_URL }}
+      - name: Send post-build message to Discord
         run: |
-          curl -X POST -H "Content-Type: application/json" \
-          -d '{
-                "content": "✅ ¡Todos los checks del PR pasaron!\n🔗 Puedes descargar el APK desde la pestaña de [Expo Builds](https://expo.dev/accounts/enriquegilq/projects/books/builds)"
-              }' \
-          $DISCORD_WEBHOOK_URL
+          DISCORD_WEBHOOK_URL="https://discord.com/api/webhooks/1359492861376073849/UG5D1MUvgsO2cPYacgJX9md7S19nGOQ0W0cOov9IN7pcfyXW1KxJXjewK_EjWZm4FmBA"
+          MESSAGE="🚀 El build de la aplicación ha sido completado exitosamente."
+          curl -X POST "$DISCORD_WEBHOOK_URL" -H "Content-Type: application/json" -d "{\"content\": \"$MESSAGE\"}"
