@@ -1,4 +1,4 @@
-name: Obtener URL del APK desde EAS
+name: Obtener último APK de EAS y notificar a Discord
 
 on:
   push:
@@ -6,43 +6,61 @@ on:
       - test-2  # Cambiar a la rama adecuada, por ejemplo, main
 
 jobs:
-  obtener-apk:
+  get-latest-build:
     runs-on: ubuntu-latest
 
     steps:
-      - name: 📂 Checkout del repositorio
+      - name: Checkout del repositorio
         uses: actions/checkout@v3
 
-      - name: 📦 Instalar EAS CLI
+      - name: Instalar dependencias
         run: |
+          sudo apt-get update
+          sudo apt-get install -y expect
           npm install -g eas-cli
-          eas --version  # Verificar la versión instalada de eas-cli para depuración
 
-      - name: 🔐 Iniciar sesión en EAS
+      - name: Autenticarse con eas login
         run: |
-          echo "Iniciando sesión con EAS..."
-          eas login --non-interactive
+          expect <<EOF
+          spawn eas login
+          expect "Email address:"
+          send "${{ vars.EAS_USERNAME }}\r"
+          expect "Password:"
+          send "${{ vars.EAS_PASSWORD }}\r"
+          expect eof
+          EOF
         env:
           EAS_EMAIL: ${{ vars.EAS_EMAIL }}
           EAS_PASSWORD: ${{ vars.EAS_PASSWORD }}
 
-      - name: 📋 Obtener última URL del APK
+      - name: Obtener última URL del APK
         id: get_apk_url
         run: |
           echo "📦 Obteniendo información del último build..."
-
+          
+          # Ejecutar el comando y guardar la salida completa
           BUILD_INFO=$(eas build:list --limit 1 --platform android --json --non-interactive)
+          
+          # Imprimir la salida completa de la respuesta para depuración
+          echo "🔍 Build Info Completo: $BUILD_INFO"
 
-          echo "🔍 Build Info:"
-          echo "$BUILD_INFO"  # Ver el contenido completo de la respuesta para depuración
+          # Verificar si la respuesta está vacía
+          if [ -z "$BUILD_INFO" ]; then
+            echo "❌ No se obtuvo información del build."
+            exit 1
+          fi
 
-          if [ -z "$BUILD_INFO" ] || [ "$(echo "$BUILD_INFO" | jq length)" -eq 0 ]; then
+          # Verificar el número de builds disponibles
+          BUILD_COUNT=$(echo "$BUILD_INFO" | jq length)
+          if [ "$BUILD_COUNT" -eq 0 ]; then
             echo "❌ No se encontró ningún build."
             exit 1
           fi
 
+          # Intentar obtener la URL del APK
           APK_URL=$(echo "$BUILD_INFO" | jq -r '.[0].artifacts.buildUrl')
 
+          # Verificar si obtuvimos una URL válida
           if [ -z "$APK_URL" ]; then
             echo "❌ No se encontró la URL del APK."
             exit 1
@@ -50,14 +68,9 @@ jobs:
 
           echo "📦 APK URL: $APK_URL"
           echo "apk_url=$APK_URL" >> $GITHUB_OUTPUT
-        env:
-          EAS_EMAIL: ${{ vars.EAS_EMAIL }}
-          EAS_PASSWORD: ${{ vars.EAS_PASSWORD }}
 
-      - name: 📤 Enviar URL a Discord
+      - name: Enviar mensaje a Discord
         run: |
           curl -X POST -H "Content-Type: application/json" \
-            -d "{\"content\": \"✅ APK disponible: ${{ steps.get_apk_url.outputs.apk_url }}\"}" \
-            $DISCORD_WEBHOOK_URL
-        env:
-          DISCORD_WEBHOOK_URL: ${{ secrets.DISCORD_WEBHOOK_URL }}
+          -d "{\"content\": \"🚀 Se generó un nuevo APK: ${{ steps.get_apk_url.outputs.apk_url }}\"}" \
+          ${{ vars.DISCORD_WEBHOOK_URL }}
