@@ -23,7 +23,7 @@ jobs:
 
       - name: Authenticate EAS CLI with username and password
         run: |
-          eas login --username ${{ secrets.EAS_USERNAME }} --password ${{ secrets.EAS_PASSWORD }}
+          eas login --username ${{ vars.EAS_USERNAME }} --password ${{ vars.EAS_PASSWORD }}
 
       - name: Get latest APK URL from EAS
         id: get_apk_url
