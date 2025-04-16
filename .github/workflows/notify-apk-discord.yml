@@ -29,15 +29,15 @@ jobs:
 
       - name: EAS login using expect
         env:
-          EAS_EMAIL: ${{ vars.EAS_USERNAME }}
+          EAS_EMAIL: ${{ vars.EAS_EMAIL }}
           EAS_PASSWORD: ${{ vars.EAS_PASSWORD }}
         run: |
           expect <<EOF
           spawn eas login
           expect "Email address:"
-          send "$env(EAS_EMAIL)\r"
+          send "$EAS_EMAIL\r"
           expect "Password:"
-          send "$env(EAS_PASSWORD)\r"
+          send "$EAS_PASSWORD\r"
           expect eof
           EOF
 
