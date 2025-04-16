@@ -27,9 +27,6 @@
 	},
 	"submit": {
 	  "production": {}
-	},
-	"hooks": {
-    "post-build": "./eas-build-post-run.sh"
-  }
+	}
   }
   
