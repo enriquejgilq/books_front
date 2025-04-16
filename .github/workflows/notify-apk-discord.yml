@@ -37,12 +37,16 @@ jobs:
         id: get_apk_url
         run: |
           echo "📦 Obteniendo información del último build..."
-          
-          # Ejecutar el comando y guardar la salida completa
-          BUILD_INFO=$(eas build:list --limit 1 --platform android --json --non-interactive)
-          
-          # Imprimir la salida completa de la respuesta para depuración
+
+          # Intentamos obtener los builds y capturamos el error
+          BUILD_INFO=$(eas build:list --limit 1 --platform android --json --non-interactive 2>&1)
           echo "🔍 Build Info Completo: $BUILD_INFO"
+
+          # Verificar si la respuesta está vacía
+          if [[ "$BUILD_INFO" == *"Error"* ]]; then
+            echo "❌ Error al ejecutar eas build:list: $BUILD_INFO"
+            exit 1
+          fi
 
           # Verificar si la respuesta está vacía
           if [ -z "$BUILD_INFO" ]; then
