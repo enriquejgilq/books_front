@@ -11,7 +11,10 @@ on:
 jobs:
   eas-login:
     runs-on: ubuntu-latest
-
+    env:
+      EAS_EMAIL: ${{ vars.EAS_USERNAME }}
+      EAS_PASSWORD: ${{ vars.EAS_PASSWORD }}
+      DISCORD_WEBHOOK_URL: ${{ vars.DISCORD_WEBHOOK_URL }}
     steps:
       - name: Checkout repo
         uses: actions/checkout@v3
@@ -43,3 +46,19 @@ jobs:
 
       - name: Check logged user
         run: eas whoami
+      - name: Get Latest APK URL
+        id: get_apk_url
+        run: |
+          BUILD_INFO=$(eas build:list --limit 1 --platform android --json --non-interactive)
+          echo "🔍 Build Info: $BUILD_INFO"
+          APK_URL=$(echo "$BUILD_INFO" | jq -r '.[0].artifacts.buildUrl')
+          echo "📦 APK URL: $APK_URL"
+          echo "apk_url=$APK_URL" >> $GITHUB_OUTPUT
+
+      - name: Notify Discord with APK URL
+        run: |
+          APK_URL="${{ steps.get_apk_url.outputs.apk_url }}"
+          MESSAGE="🚀 Nuevo APK disponible para pruebas: $APK_URL"
+          curl -X POST "$DISCORD_WEBHOOK_URL" \
+            -H "Content-Type: application/json" \
+            -d "{\"content\": \"$MESSAGE\"}"
