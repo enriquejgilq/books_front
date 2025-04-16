@@ -1,4 +1,4 @@
-name: Obtener último APK de EAS y notificar a Discord
+name: Obtener URL del APK desde EAS
 
 on:
   push:
@@ -6,36 +6,37 @@ on:
       - test-2  # Cambiar a la rama adecuada, por ejemplo, main
 
 jobs:
-  get-latest-build:
+  obtener-apk:
     runs-on: ubuntu-latest
 
     steps:
-      - name: Checkout del repositorio
+      - name: 📂 Checkout del repositorio
         uses: actions/checkout@v3
 
-      - name: Instalar eas-cli
-        run: npm install -g eas-cli
+      - name: 📦 Instalar EAS CLI
+        run: |
+          npm install -g eas-cli
+          eas --version  # Verificar la versión instalada de eas-cli para depuración
 
-      - name: Autenticarse con EAS
-        run: eas whoami
+      - name: 🔐 Iniciar sesión en EAS
+        run: |
+          echo "Iniciando sesión con EAS..."
+          eas login --non-interactive
         env:
-          EAS_ACCESS_TOKEN: ${{ secrets.EAS_ACCESS_TOKEN }}
+          EAS_EMAIL: ${{ vars.EAS_EMAIL }}
+          EAS_PASSWORD: ${{ vars.EAS_PASSWORD }}
 
-      - name: Obtener última URL del APK
+      - name: 📋 Obtener última URL del APK
         id: get_apk_url
         run: |
           echo "📦 Obteniendo información del último build..."
 
           BUILD_INFO=$(eas build:list --limit 1 --platform android --json --non-interactive)
-          echo "🔍 Build Info: $BUILD_INFO"
 
-          if [ -z "$BUILD_INFO" ]; then
-            echo "❌ No se obtuvo información del build."
-            exit 1
-          fi
+          echo "🔍 Build Info:"
+          echo "$BUILD_INFO"  # Ver el contenido completo de la respuesta para depuración
 
-          BUILD_COUNT=$(echo "$BUILD_INFO" | jq length)
-          if [ "$BUILD_COUNT" -eq 0 ]; then
+          if [ -z "$BUILD_INFO" ] || [ "$(echo "$BUILD_INFO" | jq length)" -eq 0 ]; then
             echo "❌ No se encontró ningún build."
             exit 1
           fi
@@ -50,10 +51,13 @@ jobs:
           echo "📦 APK URL: $APK_URL"
           echo "apk_url=$APK_URL" >> $GITHUB_OUTPUT
         env:
-          EAS_ACCESS_TOKEN: ${{ secrets.EAS_ACCESS_TOKEN }}
+          EAS_EMAIL: ${{ vars.EAS_EMAIL }}
+          EAS_PASSWORD: ${{ vars.EAS_PASSWORD }}
 
-      - name: Enviar mensaje a Discord
+      - name: 📤 Enviar URL a Discord
         run: |
           curl -X POST -H "Content-Type: application/json" \
-          -d "{\"content\": \"🚀 Se generó un nuevo APK: ${{ steps.get_apk_url.outputs.apk_url }}\"}" \
-          ${{ secrets.DISCORD_WEBHOOK_URL }}
+            -d "{\"content\": \"✅ APK disponible: ${{ steps.get_apk_url.outputs.apk_url }}\"}" \
+            $DISCORD_WEBHOOK_URL
+        env:
+          DISCORD_WEBHOOK_URL: ${{ secrets.DISCORD_WEBHOOK_URL }}
