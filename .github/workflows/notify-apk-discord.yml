@@ -3,7 +3,7 @@ name: Notify Discord on Merge to Develop
 on:
   push:
     branches:
-      - test-2
+      - test-2  # Cambiar a la rama adecuada, por ejemplo, main
 
 jobs:
   notify:
@@ -20,6 +20,9 @@ jobs:
 
       - name: Install EAS CLI
         run: npm install -g eas-cli
+
+      - name: Authenticate EAS CLI
+        run: eas login --token ${{ vars.EAS_ACCESS_TOKEN_VAR }}
 
       - name: Get latest APK URL from EAS
         id: get_apk_url
