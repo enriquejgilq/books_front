@@ -24,7 +24,7 @@ jobs:
       - name: Get latest APK URL from EAS
         id: get_apk_url
         env:
-          EAS_ACCESS_TOKEN: ${{ vars.EAS_ACCESS_TOKEN }}
+          EAS_ACCESS_TOKEN: ${{ vars.EAS_ACCESS_TOKEN_VAR }}
         run: |
           echo "🔑 Usando token de EAS..."
           eas whoami || echo "No autenticado, pero seguimos..."
