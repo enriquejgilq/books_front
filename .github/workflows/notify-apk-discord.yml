@@ -50,17 +50,40 @@ jobs:
         id: get_apk_url
         run: |
           echo "📦 Obteniendo información del último build..."
+          
+          # Ejecutar el comando para obtener el último build
           BUILD_INFO=$(eas build:list --limit 1 --platform android --json --non-interactive)
+          
+          # Imprimir la salida del comando para depuración
           echo "🔍 Build Info: $BUILD_INFO"
-
-          if [ "$(echo "$BUILD_INFO" | jq length)" -eq 0 ]; then
+          
+          # Verificar si el resultado está vacío
+          if [ -z "$BUILD_INFO" ]; then
+            echo "❌ No se obtuvo información del build. Posible error en la autenticación o configuración del proyecto."
+            exit 1
+          fi
+          
+          # Verificar si la respuesta contiene un build válido
+          BUILD_COUNT=$(echo "$BUILD_INFO" | jq length)
+          if [ "$BUILD_COUNT" -eq 0 ]; then
             echo "❌ No se encontró ningún build."
             exit 1
           fi
 
+          # Obtener la URL del APK
           APK_URL=$(echo "$BUILD_INFO" | jq -r '.[0].artifacts.buildUrl')
+
+          # Verificar si se obtuvo una URL válida
+          if [ -z "$APK_URL" ]; then
+            echo "❌ No se encontró la URL del APK."
+            exit 1
+          fi
+
           echo "📦 APK URL: $APK_URL"
+
+          # Guardar la URL del APK como salida de GitHub
           echo "apk_url=$APK_URL" >> $GITHUB_OUTPUT
+
 
       - name: Notify Discord with APK URL
         run: |
