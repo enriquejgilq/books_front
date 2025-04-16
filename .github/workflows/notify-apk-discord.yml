@@ -21,21 +21,15 @@ jobs:
       - name: Install EAS CLI
         run: npm install -g eas-cli
 
-      - name: Authenticate EAS CLI
-        run: eas login --token ${{ vars.EAS_ACCESS_TOKEN_VAR }}
+      - name: Authenticate EAS CLI with username and password
+        run: |
+          eas login --username ${{ secrets.EAS_USERNAME }} --password ${{ secrets.EAS_PASSWORD }}
 
       - name: Get latest APK URL from EAS
         id: get_apk_url
-        env:
-          EAS_ACCESS_TOKEN: ${{ vars.EAS_ACCESS_TOKEN_VAR }}
         run: |
-          echo "🔑 Usando token de EAS..."
-          eas whoami || echo "No autenticado, pero seguimos..."
-
           BUILD_INFO=$(eas build:list --limit 1 --platform android --json --non-interactive)
-          echo "🔍 Build Info: $BUILD_INFO"
           APK_URL=$(echo "$BUILD_INFO" | jq -r '.[0].artifacts.buildUrl')
-          echo "📦 APK URL: $APK_URL"
           echo "apk_url=$APK_URL" >> $GITHUB_OUTPUT
 
       - name: Notify Discord with APK URL
