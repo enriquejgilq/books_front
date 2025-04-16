@@ -29,7 +29,7 @@ jobs:
 
       - name: EAS login using expect
         env:
-          EAS_EMAIL: ${{ vars.EAS_EMAIL }}
+          EAS_EMAIL: ${{ vars.EAS_USERNAME }}
           EAS_PASSWORD: ${{ vars.EAS_PASSWORD }}
         run: |
           expect <<EOF
