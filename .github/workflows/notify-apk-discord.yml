@@ -39,40 +39,9 @@ jobs:
           echo "📦 Obteniendo información del último build..."
 
           # Ejecutar el comando e imprimir la salida de error y estándar
-          BUILD_INFO=$(eas build:list --limit 1 --platform android --json --non-interactive 2>&1)
-          echo "🔍 Build Info Completo: $BUILD_INFO"
+          eas build:list --limit 1 --platform android --json --non-interactive || echo "❌ Error ejecutando el comando eas build:list"
+          echo "🔍 Build Info Completo: "
 
-          # Si el comando devuelve error, imprimir más detalles
-          if [[ "$BUILD_INFO" == *"Error"* ]]; then
-            echo "❌ Error al ejecutar eas build:list. Salida completa:"
-            echo "$BUILD_INFO"
-            exit 1
-          fi
-
-          # Verificar si la respuesta está vacía
-          if [ -z "$BUILD_INFO" ]; then
-            echo "❌ No se obtuvo información del build."
-            exit 1
-          fi
-
-          # Verificar el número de builds disponibles
-          BUILD_COUNT=$(echo "$BUILD_INFO" | jq length)
-          if [ "$BUILD_COUNT" -eq 0 ]; then
-            echo "❌ No se encontró ningún build."
-            exit 1
-          fi
-
-          # Intentar obtener la URL del APK
-          APK_URL=$(echo "$BUILD_INFO" | jq -r '.[0].artifacts.buildUrl')
-
-          # Verificar si obtuvimos una URL válida
-          if [ -z "$APK_URL" ]; then
-            echo "❌ No se encontró la URL del APK."
-            exit 1
-          fi
-
-          echo "📦 APK URL: $APK_URL"
-          echo "apk_url=$APK_URL" >> $GITHUB_OUTPUT
 
       - name: Enviar mensaje a Discord
         run: |
