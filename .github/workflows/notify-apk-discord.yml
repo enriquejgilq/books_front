@@ -26,7 +26,7 @@ jobs:
           EAS_ACCESS_TOKEN: ${{ vars.EAS_ACCESS_TOKEN_VAR }}
         id: get_build
         run: |
-          BUILD_INFO=$(eas build:list --limit 1 --platform android --json)
+          BUILD_INFO=$(eas build:list --limit 1 --platform android --json --non-interactive)
           APK_URL=$(echo "$BUILD_INFO" | jq -r '.[0].artifacts.buildUrl')
           echo "apk_url=$APK_URL" >> $GITHUB_OUTPUT
 
