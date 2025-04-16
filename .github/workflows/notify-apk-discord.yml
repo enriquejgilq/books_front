@@ -1,7 +1,9 @@
 name: Obtener último APK de EAS y notificar a Discord
 
 on:
-  workflow_dispatch:
+  push:
+    branches:
+      - test-2  # Cambiar a la rama adecuada, por ejemplo, main
 
 jobs:
   get-latest-build:
