@@ -1,42 +1,45 @@
-name: Notify Discord on Merge to Develop
+name: EAS Login Test
 
 on:
   push:
     branches:
-      - test-2  # Cambiar a la rama adecuada, por ejemplo, main
+      - test-2
+  pull_request:
+    branches:
+      - test-2
 
 jobs:
-  notify:
+  eas-login:
     runs-on: ubuntu-latest
 
     steps:
       - name: Checkout repo
         uses: actions/checkout@v3
 
-      - name: Set up Node.js
+      - name: Setup Node
         uses: actions/setup-node@v3
         with:
-          node-version: '18'
+          node-version: 20
 
-      - name: Install EAS CLI
+      - name: Install eas-cli
         run: npm install -g eas-cli
 
-      - name: Authenticate EAS CLI with username and password
-        run: |
-          eas login --username ${{ vars.EAS_USERNAME }} --password ${{ vars.EAS_PASSWORD }}
+      - name: Install expect
+        run: sudo apt-get update && sudo apt-get install -y expect
 
-      - name: Get latest APK URL from EAS
-        id: get_apk_url
+      - name: EAS login using expect
+        env:
+          EAS_EMAIL: ${{ vars.EAS_USERNAME }}
+          EAS_PASSWORD: ${{ vars.EAS_PASSWORD }}
         run: |
-          BUILD_INFO=$(eas build:list --limit 1 --platform android --json --non-interactive)
-          APK_URL=$(echo "$BUILD_INFO" | jq -r '.[0].artifacts.buildUrl')
-          echo "apk_url=$APK_URL" >> $GITHUB_OUTPUT
+          expect <<EOF
+          spawn eas login
+          expect "Email address:"
+          send "$env(EAS_EMAIL)\r"
+          expect "Password:"
+          send "$env(EAS_PASSWORD)\r"
+          expect eof
+          EOF
 
-      - name: Notify Discord with APK URL
-        run: |
-          DISCORD_WEBHOOK_URL="https://discord.com/api/webhooks/1359492861376073849/UG5D1MUvgsO2cPYacgJX9md7S19nGOQ0W0cOov9IN7pcfyXW1KxJXjewK_EjWZm4FmBA"
-          APK_URL="${{ steps.get_apk_url.outputs.apk_url }}"
-          MESSAGE="🚀 Nuevo APK disponible para pruebas: $APK_URL"
-          curl -X POST "$DISCORD_WEBHOOK_URL" \
-            -H "Content-Type: application/json" \
-            -d "{\"content\": \"$MESSAGE\"}"
+      - name: Check logged user
+        run: eas whoami
