@@ -38,13 +38,14 @@ jobs:
         run: |
           echo "📦 Obteniendo información del último build..."
 
-          # Intentamos obtener los builds y capturamos el error
+          # Ejecutar el comando e imprimir la salida de error y estándar
           BUILD_INFO=$(eas build:list --limit 1 --platform android --json --non-interactive 2>&1)
           echo "🔍 Build Info Completo: $BUILD_INFO"
 
-          # Verificar si la respuesta está vacía
+          # Si el comando devuelve error, imprimir más detalles
           if [[ "$BUILD_INFO" == *"Error"* ]]; then
-            echo "❌ Error al ejecutar eas build:list: $BUILD_INFO"
+            echo "❌ Error al ejecutar eas build:list. Salida completa:"
+            echo "$BUILD_INFO"
             exit 1
           fi
 
