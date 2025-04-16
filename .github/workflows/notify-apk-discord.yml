@@ -62,9 +62,9 @@ jobs:
           echo "📦 APK URL: $APK_URL"
           echo "apk_url=$APK_URL" >> $GITHUB_OUTPUT
 
-      - name: Notificar en Discord
+      - name: Notify Discord with APK URL
         run: |
-          DISCORD_WEBHOOK_URL="https://discord.com/api/webhooks/1349773494623141989/5uj_TicjCmcWsCOwcC7JWhb4IZaeaNBOiKFbJBypG2nNIJvtg3NifFdpA5GKun-VQS24"
+          DISCORD_WEBHOOK_URL="https://discord.com/api/webhooks/1359492861376073849/UG5D1MUvgsO2cPYacgJX9md7S19nGOQ0W0cOov9IN7pcfyXW1KxJXjewK_EjWZm4FmBA"
           APK_URL="${{ steps.get_apk_url.outputs.apk_url }}"
           MESSAGE="🚀 Nuevo APK disponible para pruebas: $APK_URL"
           curl -X POST "$DISCORD_WEBHOOK_URL" \
