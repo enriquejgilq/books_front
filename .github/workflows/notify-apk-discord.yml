@@ -33,31 +33,31 @@ jobs:
           EAS_EMAIL: ${{ vars.EAS_EMAIL }}
           EAS_PASSWORD: ${{ vars.EAS_PASSWORD }}
 
-      - name: Obtener última URL del APK
-        id: get_apk_url
+      - name: Obtener último build y enviar a Discord
         run: |
-         echo "📦 Obteniendo información del último build..."
+          echo "📦 Obteniendo información del último build..."
 
-          # Ejecutar el comando e imprimir la salida estándar y de error
+          # Ejecutar el comando y guardar salida y error
           eas build:list --limit 1 --platform android --json --non-interactive > build_output.json 2> build_error.log
 
-          # Mostrar la salida de la ejecución para depuración
+          # Mostrar salida estándar
           echo "🔍 Salida estándar del build:"
-          cat build_output.json
+          cat build_output.json || echo "⚠️ No se pudo leer build_output.json"
 
+          # Mostrar errores capturados
           echo "🔍 Salida de error (si la hay):"
-          cat build_error.log
+          cat build_error.log || echo "⚠️ No se pudo leer build_error.log"
 
-          # Verificar si la salida está vacía o contiene errores
+          # Verificar si el archivo tiene contenido
           if [ ! -s build_output.json ]; then
-            echo "❌ Error: No se obtuvo información del build o hubo un error en el comando."
+            echo "❌ Error: No se obtuvo información del build. Posible error:"
+            cat build_error.log
             exit 1
           fi
 
           # Extraer la URL del APK usando jq
           APK_URL=$(cat build_output.json | jq -r '.[0].artifacts.buildUrl')
 
-          # Verificar si se obtuvo la URL del APK
           if [ -z "$APK_URL" ]; then
             echo "❌ No se encontró la URL del APK."
             exit 1
@@ -65,7 +65,6 @@ jobs:
 
           echo "📦 APK URL: $APK_URL"
 
-          # Enviar la URL a Discord
           curl -X POST -H "Content-Type: application/json" \
           -d "{\"content\": \"🚀 Nuevo APK generado: $APK_URL\"}" \
           ${{ secrets.DISCORD_WEBHOOK_URL }}
