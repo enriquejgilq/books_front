@@ -10,6 +10,12 @@ jobs:
     name: Consultar Builds y Notificar a Discord
     runs-on: ubuntu-latest
 
+    # Definir variables de entorno para todos los pasos del job
+    env:
+      EAS_ACCESS_TOKEN: ${{ secrets.EAS_TOKEN }}
+      EXPO_TOKEN: ${{ secrets.EAS_TOKEN }}  # Usar el mismo token para ambos
+      DISCORD_WEBHOOK_URL: ${{ secrets.DISCORD_WEBHOOK_URL }}
+
     steps:
       - name: Checkout repo
         uses: actions/checkout@v3
@@ -20,15 +26,18 @@ jobs:
       - name: Install EAS CLI
         run: npm install -g eas-cli
 
-      - name: Autenticarse con Expo (EAS)
+      - name: Verificar versión de EAS CLI
+        run: eas --version  # Verifica la versión de EAS CLI instalada
+
+      - name: Verificar token de autenticación
         run: |
-          # Aquí no es necesario hacer login, ya que usaremos el token en las variables de entorno
-          echo "Autenticando con Expo..."
+          echo "EAS_ACCESS_TOKEN: $EAS_ACCESS_TOKEN"
+          echo "EXPO_TOKEN: $EXPO_TOKEN"  # Verifica que los tokens están siendo cargados correctamente
 
       - name: Consultar el último build generado
         run: |
           # Consulta el último build generado para Android y guarda la respuesta en result.json
-          eas build:list --limit 1 --platform android --json --non-interactive > result.json
+          eas build:list --limit 1 --platform android --json --non-interactive > result.json || exit 1
 
       - name: Verificar contenido de result.json
         run: cat result.json
@@ -46,7 +55,4 @@ jobs:
           # Enviar mensaje a Discord
           curl -X POST -H "Content-Type: application/json" \
             -d "{\"content\": \"📦 Nueva build de preview generada para Android: $BUILD_URL\"}" \
-            ${{ secrets.DISCORD_WEBHOOK_URL }}
-        env:
-          EAS_ACCESS_TOKEN: ${{ secrets.EAS_TOKEN }}
-          EXPO_TOKEN: ${{ secrets.EAS_TOKEN }}  # Usar el mismo token para ambos
+            $DISCORD_WEBHOOK_URL
