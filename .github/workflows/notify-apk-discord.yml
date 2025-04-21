@@ -1,4 +1,4 @@
-name: EAS Preview Build on PR to dev
+name: Build APK on PR to dev
 
 on:
   pull_request:
@@ -6,11 +6,12 @@ on:
       - dev
 
 jobs:
-  build-android-preview:
+  build-preview:
+    name: Build Preview APK
     runs-on: ubuntu-latest
 
     steps:
-      - name: Checkout code
+      - name: Checkout repo
         uses: actions/checkout@v3
 
       - name: Set up Node.js
@@ -24,20 +25,14 @@ jobs:
       - name: Install EAS CLI
         run: npm install -g eas-cli
 
-      - name: Authenticate with EAS
-        run: eas login --token ${{ secrets.EAS_TOKEN }}
+      - name: Build with EAS
+        run: eas build --platform android --profile preview --non-interactive --json > result.json
+        env:
+          EAS_ACCESS_TOKEN: ${{ secrets.EAS_TOKEN }}
 
-      - name: Trigger EAS Build (Android)
-        id: eas_build
+      - name: Send Discord notification
         run: |
-          eas build --platform android --profile preview --non-interactive --json > build-result.json
-          BUILD_URL=$(cat build-result.json | jq -r '.builds.android.artifacts.buildUrl')
-          echo "build_url=$BUILD_URL" >> $GITHUB_OUTPUT
-
-      - name: Send notification to Discord
-        run: |
-          curl -X POST ${{ secrets.DISCORD_WEBHOOK_URL }} \
-          -H "Content-Type: application/json" \
-          -d '{
-                "content": "🚀 Nuevo build de preview generado para la rama `dev`!\n🔗 APK: '${{ steps.eas_build.outputs.build_url }}'"
-              }'
+          BUILD_URL=$(jq -r '.builds.android[0].artifacts.buildUrl' result.json)
+          curl -X POST -H "Content-Type: application/json" \
+            -d "{\"content\": \"📦 Nueva build de preview generada para Android: $BUILD_URL\"}" \
+            ${{ secrets.DISCORD_WEBHOOK_URL }}
