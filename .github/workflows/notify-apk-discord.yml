@@ -1,23 +1,24 @@
-name: Build APK on PR to dev
+name: Build y Notificación a Discord
 
 on:
   pull_request:
     branches:
-      - dev
+      - dev 
 
 jobs:
-  build-preview:
-    name: Build Preview APK
+  build-and-notify:
+    name: Generar Build y Notificar a Discord
     runs-on: ubuntu-latest
+
+    # Definir variables de entorno para todos los pasos del job
+    env:
+      EAS_ACCESS_TOKEN: ${{ secrets.EAS_TOKEN }}
+      EXPO_TOKEN: ${{ secrets.EAS_TOKEN }}  # Usar el mismo token para ambos
+      DISCORD_WEBHOOK_URL: ${{ secrets.DISCORD_WEBHOOK_URL }}
 
     steps:
       - name: Checkout repo
         uses: actions/checkout@v3
-
-      - name: Set up Node.js
-        uses: actions/setup-node@v3
-        with:
-          node-version: 18
 
       - name: Install dependencies
         run: npm install
@@ -25,15 +26,43 @@ jobs:
       - name: Install EAS CLI
         run: npm install -g eas-cli
 
-      - name: Build with EAS
-        run: eas build --platform android --profile preview --non-interactive --json > result.json
-        env:
-          EAS_ACCESS_TOKEN: ${{ secrets.EAS_TOKEN }}
-          EXPO_TOKEN: ${{ secrets.EAS_TOKEN }}  # Usar el mismo token para ambos
+      - name: Verificar versión de EAS CLI
+        run: eas --version  # Verifica la versión de EAS CLI instalada
 
-      - name: Send Discord notification
+      - name: Verificar token de autenticación
         run: |
-          BUILD_URL=$(jq -r '.builds.android[0].artifacts.buildUrl' result.json)
+          echo "EAS_ACCESS_TOKEN: $EAS_ACCESS_TOKEN"
+          echo "EXPO_TOKEN: $EXPO_TOKEN"  # Verifica que los tokens están siendo cargados correctamente
+
+      # Paso 1: Generar el Build
+      - name: Build con EAS
+        run: eas build --platform android --profile preview --non-interactive --json > result.json
+
+      - name: Verificar contenido de result.json (Build)
+        run: cat result.json
+
+      # Paso 2: Consultar el último build generado
+      - name: Consultar el último build generado
+        run: |
+          # Consulta el último build generado para Android y guarda la respuesta en result.json
+          eas build:list --limit 1 --platform android --json --non-interactive > result.json || exit 1
+
+      - name: Verificar contenido de result.json (Build List)
+        run: cat result.json
+
+      # Paso 3: Obtener el enlace del build y notificar a Discord
+      - name: Consultar URL del build y notificar a Discord
+        run: |
+          # Obtener el enlace al build
+          BUILD_URL=$(jq -r '.[0].artifacts.buildUrl' result.json)
+
+          # Verifica si se obtuvo el enlace al build
+          if [ -z "$BUILD_URL" ]; then
+            echo "No se encontró el enlace al build."
+            exit 1
+          fi
+          
+          # Enviar mensaje a Discord
           curl -X POST -H "Content-Type: application/json" \
             -d "{\"content\": \"📦 Nueva build de preview generada para Android: $BUILD_URL\"}" \
-            ${{ secrets.DISCORD_WEBHOOK_URL }}
+            $DISCORD_WEBHOOK_URL
