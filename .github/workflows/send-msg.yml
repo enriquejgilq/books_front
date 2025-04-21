@@ -21,7 +21,9 @@ jobs:
         run: npm install -g eas-cli
 
       - name: Autenticarse con Expo (EAS)
-        run: eas login --token ${{ secrets.EXPO_TOKEN }}
+        run: |
+          # Aquí no es necesario hacer login, ya que usaremos el token en las variables de entorno
+          echo "Autenticando con Expo..."
 
       - name: Consultar el último build generado
         run: |
@@ -45,3 +47,6 @@ jobs:
           curl -X POST -H "Content-Type: application/json" \
             -d "{\"content\": \"📦 Nueva build de preview generada para Android: $BUILD_URL\"}" \
             ${{ secrets.DISCORD_WEBHOOK_URL }}
+        env:
+          EAS_ACCESS_TOKEN: ${{ secrets.EAS_TOKEN }}
+          EXPO_TOKEN: ${{ secrets.EAS_TOKEN }}  # Usar el mismo token para ambos
