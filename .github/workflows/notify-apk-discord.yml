@@ -1,70 +1,43 @@
-name: Obtener último APK de EAS y notificar a Discord
+name: EAS Preview Build on PR to dev
 
 on:
-  push:
+  pull_request:
     branches:
-      - test-2  # Cambiar a la rama adecuada, por ejemplo, main
+      - dev
 
 jobs:
-  get-latest-build:
+  build-android-preview:
     runs-on: ubuntu-latest
 
     steps:
-      - name: Checkout del repositorio
+      - name: Checkout code
         uses: actions/checkout@v3
 
-      - name: Instalar dependencias
+      - name: Set up Node.js
+        uses: actions/setup-node@v3
+        with:
+          node-version: 18
+
+      - name: Install dependencies
+        run: npm install
+
+      - name: Install EAS CLI
+        run: npm install -g eas-cli
+
+      - name: Authenticate with EAS
+        run: eas login --token ${{ secrets.EAS_TOKEN }}
+
+      - name: Trigger EAS Build (Android)
+        id: eas_build
         run: |
-          sudo apt-get update
-          sudo apt-get install -y expect
-          npm install -g eas-cli
+          eas build --platform android --profile preview --non-interactive --json > build-result.json
+          BUILD_URL=$(cat build-result.json | jq -r '.builds.android.artifacts.buildUrl')
+          echo "build_url=$BUILD_URL" >> $GITHUB_OUTPUT
 
-      - name: Autenticarse con eas login
+      - name: Send notification to Discord
         run: |
-          expect <<EOF
-          spawn eas login
-          expect "Email address:"
-          send "${{ vars.EAS_USERNAME }}\r"
-          expect "Password:"
-          send "${{ vars.EAS_PASSWORD }}\r"
-          expect eof
-          EOF
-        env:
-          EAS_EMAIL: ${{ vars.EAS_EMAIL }}
-          EAS_PASSWORD: ${{ vars.EAS_PASSWORD }}
-
-      - name: Obtener último build y enviar a Discord
-        run: |
-          echo "📦 Obteniendo información del último build..."
-
-          # Ejecutar el comando y guardar salida y error
-          eas build:list --limit 1 --platform android --json --non-interactive > build_output.json 2> build_error.log
-
-          # Mostrar salida estándar
-          echo "🔍 Salida estándar del build:"
-          cat build_output.json || echo "⚠️ No se pudo leer build_output.json"
-
-          # Mostrar errores capturados
-          echo "🔍 Salida de error (si la hay):"
-          cat build_error.log || echo "⚠️ No se pudo leer build_error.log"
-
-          # Verificar si el archivo tiene contenido
-          if [ ! -s build_output.json ]; then
-            echo "❌ Error: No se obtuvo información del build. Posible error:"
-            cat build_error.log
-            exit 1
-          fi
-
-          # Extraer la URL del APK usando jq
-          APK_URL=$(cat build_output.json | jq -r '.[0].artifacts.buildUrl')
-
-          if [ -z "$APK_URL" ]; then
-            echo "❌ No se encontró la URL del APK."
-            exit 1
-          fi
-
-          echo "📦 APK URL: $APK_URL"
-
-          curl -X POST -H "Content-Type: application/json" \
-          -d "{\"content\": \"🚀 Nuevo APK generado: $APK_URL\"}" \
-          ${{ secrets.DISCORD_WEBHOOK_URL }}
+          curl -X POST ${{ secrets.DISCORD_WEBHOOK_URL }} \
+          -H "Content-Type: application/json" \
+          -d '{
+                "content": "🚀 Nuevo build de preview generado para la rama `dev`!\n🔗 APK: '${{ steps.eas_build.outputs.build_url }}'"
+              }'
