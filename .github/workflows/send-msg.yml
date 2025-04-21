@@ -3,23 +3,36 @@ name: Consultar Builds y Notificar a Discord
 on:
   push:
     branches:
-      - test-2
+      - test-2  # Rama donde quieres ejecutar este flujo
 
 jobs:
-  check-builds:
-    name: Consultar Builds y Enviar Notificación
+  notify-latest-build:
+    name: Consultar Builds y Notificar a Discord
     runs-on: ubuntu-latest
 
     steps:
       - name: Checkout repo
         uses: actions/checkout@v3
 
-      - name: Ver contenido de result.json
+      - name: Install dependencies
+        run: npm install
+
+      - name: Install EAS CLI
+        run: npm install -g eas-cli
+
+      - name: Autenticarse con Expo (EAS)
+        run: eas login --token ${{ secrets.EXPO_TOKEN }}
+
+      - name: Consultar el último build generado
+        run: |
+          # Consulta el último build generado para Android y guarda la respuesta en result.json
+          eas build:list --limit 1 --platform android --json --non-interactive > result.json
+
+      - name: Verificar contenido de result.json
         run: cat result.json
 
       - name: Consultar URL del build y notificar a Discord
         run: |
-          # Reemplaza esta parte con la correcta estructura de result.json
           BUILD_URL=$(jq -r '.builds[0].artifacts.buildUrl' result.json)
           
           # Verifica si se obtuvo el enlace al build
