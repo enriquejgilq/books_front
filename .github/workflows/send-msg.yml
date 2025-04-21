@@ -1,0 +1,34 @@
+name: Consultar Builds y Notificar a Discord
+
+on:
+  push:
+    branches:
+      - test-2
+
+jobs:
+  check-builds:
+    name: Consultar Builds y Enviar Notificación
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repo
+        uses: actions/checkout@v3
+
+      - name: Ver contenido de result.json
+        run: cat result.json
+
+      - name: Consultar URL del build y notificar a Discord
+        run: |
+          # Reemplaza esta parte con la correcta estructura de result.json
+          BUILD_URL=$(jq -r '.builds[0].artifacts.buildUrl' result.json)
+          
+          # Verifica si se obtuvo el enlace al build
+          if [ -z "$BUILD_URL" ]; then
+            echo "No se encontró el enlace al build."
+            exit 1
+          fi
+          
+          # Enviar mensaje a Discord
+          curl -X POST -H "Content-Type: application/json" \
+            -d "{\"content\": \"📦 Nueva build de preview generada para Android: $BUILD_URL\"}" \
+            ${{ secrets.DISCORD_WEBHOOK_URL }}
