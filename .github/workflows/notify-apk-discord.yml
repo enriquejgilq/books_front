@@ -1,17 +1,43 @@
-name: Notify Discord on Merge to Develop
+name: EAS Preview Build on PR to dev
 
 on:
-  push:
+  pull_request:
     branches:
-      - test-2  # Se ejecuta solo cuando haya un push a la rama 'test-2'
+      - dev
 
 jobs:
-  notify:
+  build-android-preview:
     runs-on: ubuntu-latest
 
     steps:
-      - name: Send post-build message to Discord
+      - name: Checkout code
+        uses: actions/checkout@v3
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v3
+        with:
+          node-version: 18
+
+      - name: Install dependencies
+        run: npm install
+
+      - name: Install EAS CLI
+        run: npm install -g eas-cli
+
+      - name: Authenticate with EAS
+        run: eas login --token ${{ secrets.EAS_TOKEN }}
+
+      - name: Trigger EAS Build (Android)
+        id: eas_build
         run: |
-          DISCORD_WEBHOOK_URL="https://discord.com/api/webhooks/1359492861376073849/UG5D1MUvgsO2cPYacgJX9md7S19nGOQ0W0cOov9IN7pcfyXW1KxJXjewK_EjWZm4FmBA"
-          MESSAGE="🚀 El build de la aplicación ha sido completado exitosamente."
-          curl -X POST "$DISCORD_WEBHOOK_URL" -H "Content-Type: application/json" -d "{\"content\": \"$MESSAGE\"}"
+          eas build --platform android --profile preview --non-interactive --json > build-result.json
+          BUILD_URL=$(cat build-result.json | jq -r '.builds.android.artifacts.buildUrl')
+          echo "build_url=$BUILD_URL" >> $GITHUB_OUTPUT
+
+      - name: Send notification to Discord
+        run: |
+          curl -X POST ${{ secrets.DISCORD_WEBHOOK_URL }} \
+          -H "Content-Type: application/json" \
+          -d '{
+                "content": "🚀 Nuevo build de preview generado para la rama `dev`!\n🔗 APK: '${{ steps.eas_build.outputs.build_url }}'"
+              }'
