@@ -45,7 +45,7 @@ jobs:
       - name: Consultar URL del build y notificar a Discord
         run: |
           # Obtener el enlace al build
-          BUILD_URL=$(jq -r '.artifacts.buildUrl' result.json)
+          BUILD_URL=$(jq -r '.[0].artifacts.buildUrl' result.json)
 
           # Verifica si se obtuvo el enlace al build
           if [ -z "$BUILD_URL" ]; then
