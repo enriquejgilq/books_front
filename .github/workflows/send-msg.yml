@@ -1,38 +1,29 @@
-name: Obtener información del Tag y la Rama
+name: Comprobar Rama del Tag
 
 on:
   push:
     tags:
-      - 'preview*'  # Esto se activará para cualquier tag que empiece con 'preview'
+      - 'preview-*'  # Este workflow se ejecutará cuando se empuje un tag que empiece con 'preview-'
 
 jobs:
-  get-tag-info:
-    name: Obtener información del Tag y la Rama
+  check-tag-branch:
+    name: Comprobar de qué rama proviene el tag
     runs-on: ubuntu-latest
 
     steps:
-      # Paso 1: Clonar el repositorio
       - name: Checkout repo
         uses: actions/checkout@v3
 
-      # Paso 2: Obtener el nombre del tag
-      - name: Obtener el tag recibido
+      - name: Obtener el nombre del tag
         run: |
           TAG_NAME=${GITHUB_REF#refs/tags/}
           echo "Tag recibido: $TAG_NAME"
-
-      # Paso 3: Obtener el commit al que apunta el tag
-      - name: Obtener el commit asociado al tag
+        
+      - name: Obtener el commit al que apunta el tag
         run: |
           COMMIT_HASH=$(git rev-list -n 1 $TAG_NAME)
-          if [ -z "$COMMIT_HASH" ]; then
-            echo "No se encontró el commit asociado al tag."
-            exit 1
-          else
-            echo "El tag $TAG_NAME está apuntando al commit: $COMMIT_HASH"
-          fi
-
-      # Paso 4: Buscar la rama asociada a ese commit
+          echo "El tag $TAG_NAME está apuntando al commit: $COMMIT_HASH"
+        
       - name: Buscar la rama asociada al commit
         run: |
           BRANCH_NAME=$(git branch -r --contains $COMMIT_HASH | sed 's/origin\///' | head -n 1)
