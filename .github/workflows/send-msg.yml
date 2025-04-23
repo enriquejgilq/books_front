@@ -25,6 +25,9 @@ jobs:
       - name: Install dependencies
         run: npm install
 
+      - name: Instalar EAS CLI
+        run: npm install -g eas-cli
+        
       - name: Verificar token de autenticación
         run: |
           echo "EAS_ACCESS_TOKEN: ${EAS_ACCESS_TOKEN::4}****"
