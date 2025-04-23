@@ -18,10 +18,14 @@ jobs:
         run: |
           TAG_NAME=${GITHUB_REF#refs/tags/}
           echo "Tag recibido: $TAG_NAME"
-          
-          # Verifica la rama de origen
-          BRANCH_NAME=$(git log -1 --format=%D $TAG_NAME | grep -o "origin/[^,]*" | sed 's/origin\///')
-          
+
+          # Obtener el commit al que apunta el tag y luego obtener la rama
+          COMMIT_HASH=$(git rev-list -n 1 $TAG_NAME)
+          echo "El tag $TAG_NAME está apuntando al commit: $COMMIT_HASH"
+
+          # Buscar la rama asociada a ese commit
+          BRANCH_NAME=$(git branch -r --contains $COMMIT_HASH | sed 's/origin\///' | head -n 1)
+
           if [ -z "$BRANCH_NAME" ]; then
             echo "No se encontró la rama asociada al tag. Posiblemente el tag no tenga una rama de referencia directa."
           else
