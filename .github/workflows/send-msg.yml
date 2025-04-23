@@ -3,61 +3,68 @@ name: EAS Build Preview and Notify Discord
 on:
   push:
     tags:
-      - 'preview'
+      - 'preview*'   
 
 jobs:
-  build:
+  build-and-notify:
+    name: Generar Build y Notificar a Discord
     runs-on: ubuntu-latest
+
     env:
       EAS_ACCESS_TOKEN: ${{ secrets.EAS_TOKEN }}
-      EXPO_TOKEN: ${{ secrets.EAS_TOKEN }}
+      EXPO_TOKEN: ${{ secrets.EAS_TOKEN }}  
       DISCORD_WEBHOOK_URL: ${{ secrets.DISCORD_WEBHOOK_URL }}
 
     steps:
-      - name: Checkout repository
+      - name: Checkout repo
         uses: actions/checkout@v3
-
-      - name: Setup Node.js
-        uses: actions/setup-node@v3
-        with:
-          node-version: '18'
 
       - name: Install dependencies
         run: npm install
 
-      - name: Instalar EAS CLI
+      - name: Install EAS CLI
         run: npm install -g eas-cli
-        
+
+      - name: Verificar versión de EAS CLI
+        run: eas --version
+
       - name: Verificar token de autenticación
         run: |
-          echo "EAS_ACCESS_TOKEN: ${EAS_ACCESS_TOKEN::4}****"
-          echo "EXPO_TOKEN: ${EXPO_TOKEN::4}****"
+          echo "EAS_ACCESS_TOKEN: $EAS_ACCESS_TOKEN"
+          echo "EXPO_TOKEN: $EXPO_TOKEN"
 
-      - name: Ejecutar build preview
-        run: eas build --platform android --profile preview --non-interactive
+      - name: Build con EAS
+        run: eas build --platform android --profile preview --non-interactive --json > result.json
 
-      - name: Obtener rama del tag
-        id: branch
+      - name: Verificar contenido de result.json (Build)
+        run: cat result.json
+
+      - name: Consultar el último build generado
         run: |
-          BRANCH=$(git name-rev --name-only $GITHUB_SHA | cut -d'~' -f1)
-          echo "branch_name=$BRANCH" >> $GITHUB_OUTPUT
+          eas build:list --limit 1 --platform android --json --non-interactive > result.json || exit 1
 
-      - name: Esperar a que se genere el último build
-        run: |
-          echo "Esperando 60 segundos para asegurar que el build esté listo..."
-          sleep 60
+      - name: Verificar contenido de result.json (Build List)
+        run: cat result.json
 
-      - name: Obtener enlace del último APK
-        id: get_apk_url
+      # Obtener la rama actual
+      - name: Obtener la rama actual
         run: |
-          npm install -g eas-cli jq
-          BUILD_INFO=$(eas build:list --platform android --status finished --limit 1 --json)
-          APK_URL=$(echo $BUILD_INFO | jq -r '.[0].artifacts.buildUrl')
-          echo "apk_url=$APK_URL" >> $GITHUB_OUTPUT
+          BRANCH_NAME=$(git rev-parse --abbrev-ref HEAD)
+          echo "Rama actual: $BRANCH_NAME"
+        id: get_branch_name
 
-      - name: Enviar mensaje a Discord
+      # Consultar URL del build y notificar a Discord
+      - name: Consultar URL del build y notificar a Discord
         run: |
+          BUILD_URL=$(jq -r '.[0].artifacts.buildUrl' result.json)
+
+          BRANCH_NAME="${{ steps.get_branch_name.outputs.BRANCH_NAME }}"
+
+          if [ -z "$BUILD_URL" ]; then
+            echo "No se encontró el enlace al build."
+            exit 1
+          fi
+          
           curl -X POST -H "Content-Type: application/json" \
-          -d '{
-            "content": "**✅ Nuevo build generado!**\n🔧 Rama: '${{ steps.branch.outputs.branch_name }}'\n📦 APK: '${{ steps.get_apk_url.outputs.apk_url }}'"
-          }' $DISCORD_WEBHOOK_URL
+            -d "{\"content\": \"📦 Nueva build de preview generada para Android desde la rama: $BRANCH_NAME. Enlace de descarga: $BUILD_URL\"}" \
+            $DISCORD_WEBHOOK_URL
