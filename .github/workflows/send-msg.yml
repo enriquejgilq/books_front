@@ -1,35 +1,28 @@
-name: Comprobar Rama del Tag
+name: Detect Branch from Tag
 
 on:
   push:
     tags:
-      - 'preview-*'  # Este workflow se ejecutará cuando se empuje un tag que empiece con 'preview-'
+      - 'preview-*'  # Solo tags que comiencen con preview-
 
 jobs:
-  check-tag-branch:
-    name: Comprobar de qué rama proviene el tag
+  detect-branch:
     runs-on: ubuntu-latest
 
     steps:
-      - name: Checkout repo
+      - name: Checkout repo (requerido si luego haces más cosas)
         uses: actions/checkout@v3
 
-      - name: Obtener el nombre del tag
+      - name: Obtener nombre del tag y deducir la rama
         run: |
+          echo "Referencia completa del tag: $GITHUB_REF"
+
           TAG_NAME=${GITHUB_REF#refs/tags/}
-          echo "Tag recibido: $TAG_NAME"
-        
-      - name: Obtener el commit al que apunta el tag
-        run: |
-          COMMIT_HASH=$(git rev-list -n 1 $TAG_NAME)
-          echo "El tag $TAG_NAME está apuntando al commit: $COMMIT_HASH"
-        
-      - name: Buscar la rama asociada al commit
-        run: |
-          BRANCH_NAME=$(git branch -r --contains $COMMIT_HASH | sed 's/origin\///' | head -n 1)
-          
-          if [ -z "$BRANCH_NAME" ]; then
-            echo "No se encontró la rama asociada al tag. Posiblemente el tag no tenga una rama de referencia directa."
-          else
-            echo "El tag $TAG_NAME proviene de la rama $BRANCH_NAME"
-          fi
+          echo "Nombre del tag: $TAG_NAME"
+
+          # Remover el prefijo "preview-" para obtener el nombre de la rama
+          BRANCH_NAME=${TAG_NAME#preview-}
+          echo "Nombre de la rama deducido: $BRANCH_NAME"
+
+          # Exportar como variable para otros steps si hace falta
+          echo "BRANCH_NAME=$BRANCH_NAME" >> $GITHUB_ENV
