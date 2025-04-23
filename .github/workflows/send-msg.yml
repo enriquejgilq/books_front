@@ -14,18 +14,16 @@ jobs:
       - name: Checkout repo
         uses: actions/checkout@v3
 
-      - name: Obtener la rama de origen del tag
+      - name: Obtener el tag y la rama de origen
         run: |
           TAG_NAME=${GITHUB_REF#refs/tags/}
           echo "Tag recibido: $TAG_NAME"
-
-          # Buscar la rama asociada al tag
-          BRANCH_NAME=$(git name-rev --name-only $TAG_NAME)
           
-          # Mostrar la rama de origen del tag
-          echo "El tag $TAG_NAME proviene de la rama $BRANCH_NAME"
+          # Verifica la rama de origen
+          BRANCH_NAME=$(git log -1 --format=%D $TAG_NAME | grep -o "origin/[^,]*" | sed 's/origin\///')
           
-          # También puedes enviar el mensaje a Discord si lo deseas
-          # echo "Tag $TAG_NAME proviene de la rama $BRANCH_NAME" | curl -X POST -H "Content-Type: application/json" \
-          # -d "{\"content\": \"Tag $TAG_NAME proviene de la rama $BRANCH_NAME\"}" \
-          # $DISCORD_WEBHOOK_URL
+          if [ -z "$BRANCH_NAME" ]; then
+            echo "No se encontró la rama asociada al tag. Posiblemente el tag no tenga una rama de referencia directa."
+          else
+            echo "El tag $TAG_NAME proviene de la rama $BRANCH_NAME"
+          fi
