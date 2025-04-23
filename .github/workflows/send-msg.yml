@@ -14,12 +14,14 @@ jobs:
       - name: Checkout repo
         uses: actions/checkout@v3
 
-      - name: Obtener el tag y la rama de origen
+      - name: Obtener el nombre del tag
         run: |
           TAG_NAME=${GITHUB_REF#refs/tags/}
           echo "Tag recibido: $TAG_NAME"
-
-          # Obtener el commit al que apunta el tag y luego obtener la rama
+          
+      - name: Verificar desde qué rama se creó el tag
+        run: |
+          # Obtener el commit al que apunta el tag
           COMMIT_HASH=$(git rev-list -n 1 $TAG_NAME)
           echo "El tag $TAG_NAME está apuntando al commit: $COMMIT_HASH"
 
