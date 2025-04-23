@@ -1,33 +1,42 @@
-name: Verificar rama de origen del Tag
+name: Obtener información del Tag y la Rama
 
 on:
   push:
     tags:
-      - 'preview*'  # Este patrón es para cualquier tag que comience con 'preview'
+      - 'preview*'  # Esto se activará para cualquier tag que empiece con 'preview'
 
 jobs:
-  check-branch:
-    name: Verificar Rama de Origen del Tag
+  get-tag-info:
+    name: Obtener información del Tag y la Rama
     runs-on: ubuntu-latest
 
     steps:
+      # Paso 1: Clonar el repositorio
       - name: Checkout repo
         uses: actions/checkout@v3
 
-      - name: Obtener el nombre del tag
+      # Paso 2: Obtener el nombre del tag
+      - name: Obtener el tag recibido
         run: |
           TAG_NAME=${GITHUB_REF#refs/tags/}
           echo "Tag recibido: $TAG_NAME"
-          
-      - name: Verificar desde qué rama se creó el tag
+
+      # Paso 3: Obtener el commit al que apunta el tag
+      - name: Obtener el commit asociado al tag
         run: |
-          # Obtener el commit al que apunta el tag
           COMMIT_HASH=$(git rev-list -n 1 $TAG_NAME)
-          echo "El tag $TAG_NAME está apuntando al commit: $COMMIT_HASH"
+          if [ -z "$COMMIT_HASH" ]; then
+            echo "No se encontró el commit asociado al tag."
+            exit 1
+          else
+            echo "El tag $TAG_NAME está apuntando al commit: $COMMIT_HASH"
+          fi
 
-          # Buscar la rama asociada a ese commit
+      # Paso 4: Buscar la rama asociada a ese commit
+      - name: Buscar la rama asociada al commit
+        run: |
           BRANCH_NAME=$(git branch -r --contains $COMMIT_HASH | sed 's/origin\///' | head -n 1)
-
+          
           if [ -z "$BRANCH_NAME" ]; then
             echo "No se encontró la rama asociada al tag. Posiblemente el tag no tenga una rama de referencia directa."
           else
