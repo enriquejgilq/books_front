@@ -1,70 +1,31 @@
-name: EAS Build Preview and Notify Discord
+name: Verificar rama de origen del Tag
 
 on:
   push:
     tags:
-      - 'preview*'   
+      - 'preview*'  # Este patrón es para cualquier tag que comience con 'preview'
 
 jobs:
-  build-and-notify:
-    name: Generar Build y Notificar a Discord
+  check-branch:
+    name: Verificar Rama de Origen del Tag
     runs-on: ubuntu-latest
-
-    env:
-      EAS_ACCESS_TOKEN: ${{ secrets.EAS_TOKEN }}
-      EXPO_TOKEN: ${{ secrets.EAS_TOKEN }}  
-      DISCORD_WEBHOOK_URL: ${{ secrets.DISCORD_WEBHOOK_URL }}
 
     steps:
       - name: Checkout repo
         uses: actions/checkout@v3
 
-      - name: Install dependencies
-        run: npm install
-
-      - name: Install EAS CLI
-        run: npm install -g eas-cli
-
-      - name: Verificar versión de EAS CLI
-        run: eas --version
-
-      - name: Verificar token de autenticación
+      - name: Obtener la rama de origen del tag
         run: |
-          echo "EAS_ACCESS_TOKEN: $EAS_ACCESS_TOKEN"
-          echo "EXPO_TOKEN: $EXPO_TOKEN"
+          TAG_NAME=${GITHUB_REF#refs/tags/}
+          echo "Tag recibido: $TAG_NAME"
 
-      - name: Build con EAS
-        run: eas build --platform android --profile preview --non-interactive --json > result.json
-
-      - name: Verificar contenido de result.json (Build)
-        run: cat result.json
-
-      - name: Consultar el último build generado
-        run: |
-          eas build:list --limit 1 --platform android --json --non-interactive > result.json || exit 1
-
-      - name: Verificar contenido de result.json (Build List)
-        run: cat result.json
-
-      # Obtener la rama actual
-      - name: Obtener la rama actual
-        run: |
-          BRANCH_NAME=$(git rev-parse --abbrev-ref HEAD)
-          echo "Rama actual: $BRANCH_NAME"
-        id: get_branch_name
-
-      # Consultar URL del build y notificar a Discord
-      - name: Consultar URL del build y notificar a Discord
-        run: |
-          BUILD_URL=$(jq -r '.[0].artifacts.buildUrl' result.json)
-
-          BRANCH_NAME="${{ steps.get_branch_name.outputs.BRANCH_NAME }}"
-
-          if [ -z "$BUILD_URL" ]; then
-            echo "No se encontró el enlace al build."
-            exit 1
-          fi
+          # Buscar la rama asociada al tag
+          BRANCH_NAME=$(git name-rev --name-only $TAG_NAME)
           
-          curl -X POST -H "Content-Type: application/json" \
-            -d "{\"content\": \"📦 Nueva build de preview generada para Android desde la rama: $BRANCH_NAME. Enlace de descarga: $BUILD_URL\"}" \
-            $DISCORD_WEBHOOK_URL
+          # Mostrar la rama de origen del tag
+          echo "El tag $TAG_NAME proviene de la rama $BRANCH_NAME"
+          
+          # También puedes enviar el mensaje a Discord si lo deseas
+          # echo "Tag $TAG_NAME proviene de la rama $BRANCH_NAME" | curl -X POST -H "Content-Type: application/json" \
+          # -d "{\"content\": \"Tag $TAG_NAME proviene de la rama $BRANCH_NAME\"}" \
+          # $DISCORD_WEBHOOK_URL
