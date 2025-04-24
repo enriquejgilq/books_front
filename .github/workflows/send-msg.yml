@@ -3,7 +3,7 @@ name: Preview Tag Info Debug
 on:
   push:
     tags:
-      - 'preview-*'
+      - 'preview-**'
 
 jobs:
   debug-preview-tag:
