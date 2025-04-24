@@ -3,7 +3,7 @@ name: Verificar Convención del Tag
 on:
   push:
     tags:
-      - 'preview-*'
+      - 'preview*'
 
 jobs:
   validar-tag:
