@@ -1,4 +1,4 @@
-name: EAS Build Preview and Notify Discord
+name: Verificar Convención del Tag
 
 on:
   push:
@@ -6,70 +6,22 @@ on:
       - 'preview-*'
 
 jobs:
-  build-and-notify:
+  validar-tag:
     runs-on: ubuntu-latest
-    name: Generar Build y Notificar a Discord
-
-    env:
-      EAS_ACCESS_TOKEN: ${{ secrets.EAS_TOKEN }}
-      EXPO_TOKEN: ${{ secrets.EAS_TOKEN }}
-      DISCORD_WEBHOOK_URL: ${{ secrets.DISCORD_WEBHOOK_URL }}
 
     steps:
-      - name: Checkout del repositorio
-        uses: actions/checkout@v3
-
-      - name: Obtener el nombre del tag
-        id: tag
+      - name: Extraer rama y versión del tag
         run: |
-          TAG_NAME="${GITHUB_REF##refs/tags/}"
-          echo "TAG_NAME=$TAG_NAME" >> $GITHUB_OUTPUT
+          TAG_NAME="${GITHUB_REF#refs/tags/}"
 
-      - name: Validar y extraer rama y versión desde el tag
-        id: tag_info
-        run: |
-          TAG_NAME="${{ steps.tag.outputs.TAG_NAME }}"
-
-          if [[ "$TAG_NAME" =~ ^preview-([^/]+)/([^/]+)-v([0-9]+\.[0-9]+\.[0-9]+)$ ]]; then
-            TYPE="${BASH_REMATCH[1]}"
-            NAME="${BASH_REMATCH[2]}"
-            VERSION="${BASH_REMATCH[3]}"
-            BRANCH_NAME="$TYPE/$NAME"
-
-            echo "BRANCH_NAME=$BRANCH_NAME" >> $GITHUB_OUTPUT
-            echo "VERSION=$VERSION" >> $GITHUB_OUTPUT
+          # Extraer partes usando expresiones regulares
+          if [[ "$TAG_NAME" =~ ^preview-(.+)-v([0-9]+\.[0-9]+\.[0-9]+)$ ]]; then
+            BRANCH_NAME="${BASH_REMATCH[1]}"
+            VERSION="${BASH_REMATCH[2]}"
+            echo "✅ Tag válido: $TAG_NAME"
+            echo "📂 Rama original: $BRANCH_NAME"
+            echo "📌 Versión: $VERSION"
           else
-            echo "❌ Formato inválido. Usa: preview-<tipo>/<nombre>-v<versión>"
+            echo "❌ El tag '$TAG_NAME' no sigue la convención preview-nombre-rama-vX.Y.Z"
             exit 1
           fi
-
-      - name: Instalar dependencias
-        run: npm install
-
-      - name: Instalar EAS CLI
-        run: npm install -g eas-cli
-
-      - name: Ejecutar build con EAS
-        run: eas build --platform android --profile preview --non-interactive --json > result.json
-
-      - name: Verificar result.json
-        run: cat result.json
-
-      - name: Obtener URL del último build
-        run: |
-          eas build:list --limit 1 --platform android --json --non-interactive > result.json
-
-      - name: Notificar a Discord
-        run: |
-          BUILD_URL=$(jq -r '.[0].artifacts.buildUrl' result.json)
-          BRANCH_NAME="${{ steps.tag_info.outputs.BRANCH_NAME }}"
-          VERSION="${{ steps.tag_info.outputs.VERSION }}"
-
-          if [ -z "$BUILD_URL" ]; then
-            echo "No se encontró el enlace al build."
-            exit 1
-          fi
-
-          curl -X POST -H "Content-Type: application/json" \
-            -d "{\"content\": \"📦 Nueva build de preview generada desde la rama \`$BRANCH_NAME\` versión \`$VERSION\`. Enlace de descarga: $BUILD_URL\"}" \
-            $DISCORD_WEBHOOK_URL
