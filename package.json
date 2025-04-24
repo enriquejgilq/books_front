@@ -9,7 +9,8 @@
     "ios": "expo start --ios",
     "web": "expo start --web",
     "test": "jest --watchAll",
-    "lint": "expo lint"
+    "lint": "expo lint",
+    "generate-tag": "git rev-parse --abbrev-ref HEAD && git tag preview-$(git rev-parse --abbrev-ref HEAD) && git push origin preview-$(git rev-parse --abbrev-ref HEAD)"
   },
   "jest": {
     "preset": "jest-expo"

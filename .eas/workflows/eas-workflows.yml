@@ -10,7 +10,7 @@ jobs:
     platform: android
     project_type: expo
     params:
-      profile: preview
+      profile: development 
       platform: android  
       build_artifacts:
         android:

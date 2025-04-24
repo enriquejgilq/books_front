@@ -1,0 +1,27 @@
+name: Verificar Convención del Tag
+
+on:
+  push:
+    tags:
+      - 'preview*'
+
+jobs:
+  validar-tag:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Extraer rama y versión del tag
+        run: |
+          TAG_NAME="${GITHUB_REF#refs/tags/}"
+
+          # Extraer partes usando expresiones regulares
+          if [[ "$TAG_NAME" =~ ^preview-(.+)-v([0-9]+\.[0-9]+\.[0-9]+)$ ]]; then
+            BRANCH_NAME="${BASH_REMATCH[1]}"
+            VERSION="${BASH_REMATCH[2]}"
+            echo "✅ Tag válido: $TAG_NAME"
+            echo "📂 Rama original: $BRANCH_NAME"
+            echo "📌 Versión: $VERSION"
+          else
+            echo "❌ El tag '$TAG_NAME' no sigue la convención preview-nombre-rama-vX.Y.Z"
+            exit 1
+          fi
